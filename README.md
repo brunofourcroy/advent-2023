@@ -9,5 +9,5 @@ yarn ts-node day-{day}/part-{part}
 To run tests
 
 ```
-yarn jesst day-{day}/part-{part}
+yarn jest day-{day}/part-{part}
 ```
