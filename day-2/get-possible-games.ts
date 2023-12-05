@@ -1,17 +1,5 @@
 import { getMaxCounts } from "./get-max-counts";
 
-type Game = {
-    maxRed: number;
-    maxGreen: number;
-    maxBlue: number;
-}
-
-type Round = {
-    red?: number;
-    green?: number;
-    blue?: number;
-}
-
 export const getPossibleGames = (input: string, inputRed: number, inputGreen: number, inputBlue: number): number => {
     const games = getMaxCounts(input);
 
