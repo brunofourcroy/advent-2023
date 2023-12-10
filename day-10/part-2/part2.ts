@@ -8,14 +8,14 @@ enum Pos {
 enum CellType {
     PATH = 'P',
     FREE = 'F',
-    UNKNOWN = 'U'
+    JAIL = 'U'
 }
 
 type Cell = {
     x: number;
     y: number;
     tile: string;
-    type: CellType
+    type?: CellType
 }
 
 const areConnected = (a: string, b: string, rel: Pos): boolean => {
@@ -173,7 +173,6 @@ export const getCellMap = (map: string[][], path: [number, number][]): Cell[][] 
                     x: i,
                     y: j,
                     tile: map[i][j],
-                    type: CellType.UNKNOWN
                 });
             }
         }
@@ -182,26 +181,9 @@ export const getCellMap = (map: string[][], path: [number, number][]): Cell[][] 
     return newMap;
 };
 
-const allMappedOut = (map: Cell[][]): boolean => {
-    let notMapped = true;
-    for (let i = 0; i < map.length; i++) {
-        if (notMapped) {
-            break;
-        }
-        for (let j = 0; j < map.length; j++) {
-            if (map[i][j].type === CellType.UNKNOWN) {
-                notMapped = false;
-                break;
-            }
-        }
-    }
-
-    return notMapped;
-}
-
 export const getCellType = (map: Cell[][], x: number, y: number): CellType => {
-    if (map[x][y].type !== CellType.UNKNOWN) {
-        return map[x][y].type;
+    if (map[x][y].type === CellType.PATH) {
+        return CellType.PATH;
     }
     if (x === 0) {        
         return CellType.FREE;
@@ -215,30 +197,11 @@ export const getCellType = (map: Cell[][], x: number, y: number): CellType => {
     if (y === map[x].length - 1) {
         return CellType.FREE;
     }
-    const above = map[x - 1][y];
-    if (above.type === CellType.FREE) {
-        return CellType.FREE;
-    }
-
-    const below = map[x + 1][y];
-    if (below.type === CellType.FREE) {
-        return CellType.FREE;
-    }
-
-    const left = map[x][y - 1];
-    if (left.type === CellType.FREE) {
-        return CellType.FREE;
-    }
-
-    const right = map[x][y + 1];
-    if (right.type === CellType.FREE) {
-        return CellType.FREE;
-    }
     let intersectionCount = 0;
     let count = 1;
     while (y - count >= 0) {
         const left = map[x][y - count];
-        // We simulate going above the pipe
+        // We simulate going above the pipe, so we only count 'path' pipes that would intersect (so not F, -, 7, S)
         if (left.type === CellType.PATH && ['|', 'L', 'J'].includes(left.tile)) {
             intersectionCount += 1;
         }
@@ -248,7 +211,7 @@ export const getCellType = (map: Cell[][], x: number, y: number): CellType => {
         return CellType.FREE;
     }
 
-    return CellType.UNKNOWN;
+    return CellType.JAIL;
 }
    
 export const part2 = (input: string): number => {
@@ -256,39 +219,16 @@ export const part2 = (input: string): number => {
 
     const cellMap = getCellMap(map, path);
 
-    let anyTypeChanged = true;
-    while (allMappedOut(cellMap) && anyTypeChanged) {
-        anyTypeChanged = false;
-        for (let i = 0; i < cellMap.length; i++) {
-            for (let j = 0; j < cellMap[i].length; j++) {
-                const typeBefore = cellMap[i][j].type;
-                cellMap[i][j].type = getCellType(cellMap, i, j);
-                if (cellMap[i][j].type !== typeBefore) {
-                    anyTypeChanged = true;
-                }
-            }
-        }
-    }
-    // Any remaining cells are jail cells, we count them
+
     let counter = 0;
     for (let i = 0; i < cellMap.length; i++) {
         for (let j = 0; j < cellMap[i].length; j++) {
-            if (cellMap[i][j].type === CellType.UNKNOWN) {
-                counter += 1;
+            cellMap[i][j].type = getCellType(cellMap, i, j);
+            if (cellMap[i][j].type === CellType.JAIL) {
+                counter +=1 ;
             }
         }
     }
-    const mapAsString = cellMap.map(row => row.map(cell => {
-        switch (cell.type) {
-            case CellType.FREE:
-                return '0';
-            case CellType.UNKNOWN:
-                return '*';
-            case CellType.PATH:
-                return cell.tile;
-        }
-    
-    }).join('')).join('\n');
-    console.log(mapAsString);
+
     return counter;
 }
