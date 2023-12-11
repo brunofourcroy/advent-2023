@@ -4,10 +4,17 @@ const getGalaxyPositions = (input: string): { positions: [number, number][], emp
 
     // Track empty rows
     const emptyRows = [];
+    const positions: [number, number][] = [];
     for (let i = 0; i < initialMap.length; i++) {
         const line = initialMap[i];
         if (line.every((char) => char === '.')) {
             emptyRows.push(i);
+        }
+        for (let j = 0; j < line.length; j++) {
+            const char = line[j];
+            if (char === '#') {
+                positions.push([i, j]);
+            }
         }
     }
 
@@ -19,16 +26,6 @@ const getGalaxyPositions = (input: string): { positions: [number, number][], emp
             emptyColumns.push(i);
         }
     };
-    const positions: [number, number][] = [];
-    for (let i = 0; i < initialMap.length; i++) {
-        const line = initialMap[i];
-        for (let j = 0; j < line.length; j++) {
-            const char = line[j];
-            if (char === '#') {
-                positions.push([i, j]);
-            }
-        }
-    }
 
     return { positions, emptyRows, emptyColumns };
 };
@@ -44,6 +41,7 @@ export const part2 = (input: string, expansionRate: number): number => {
             // Check if there were empty rows or colums between the two points
             const emptyRowsBetween = emptyRows.filter((row) => row > start[0] && row < end[0]); // Positions were gather top to bottom so no reason to check the other way
             const emptyColumnsBetween = emptyColumns.filter((column) => (column > start[1] && column < end[1]) || (column > end[1] && column < start[1]));
+            // -1 because the one row/column was already counter, eg. expanding by 10 means adding 9.
             distancesFromPos.push(distance + emptyRowsBetween.length * (expansionRate - 1) + emptyColumnsBetween.length * (expansionRate - 1))
         }
 
