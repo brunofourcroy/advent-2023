@@ -1,10 +1,10 @@
 import { promises as fs } from 'fs';
 import { part2 } from './part2';
 
-describe('Day 14 - Part 2', () => {
+describe('Day 18 - Part 2', () => {
     it('works for the first example', async() => {
         const testData = await fs.readFile(`${__dirname}/../test-data.txt`, 'utf-8');
 
-        expect(part2(testData)).toBe(51);
+        expect(part2(testData)).toBe(952408144115);
     });
 });
