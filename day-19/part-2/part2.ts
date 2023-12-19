@@ -133,33 +133,22 @@ const allRange: PartRange = {
 export const getValidInputs = (workflows: Record<string, Rule[]>, ruleName: string, destination: string, prevRange?: PartRange): PartRange[] => {
     const rules = workflows[ruleName];
     const ruleRanges: PartRange[] = [];
+    // If all outcomes lead to A, short-circuit
     if (rules.every(rule => rule.outcome === 'A')) {
         ruleRanges.push(
             mergeRanges([allRange, ...(prevRange ? [prevRange] : [])]));
     } else {
-        let currentRange: PartRange = {};
-        let lastMatchingRule: number | null = null;
+        // For each rule that leads to A, build the range by going backwards
         for (let i = rules.length - 1; i >= 0; i--) {
-            if (rules[i].outcome === destination) {
-                lastMatchingRule = i;
-                break
-            }
-        }
-        if (typeof lastMatchingRule !== 'number') {
-            throw new Error(`No matching rule found for ${destination}`);
-        }
-        for (let i = 0; i <= lastMatchingRule; i++) {
             const rule = rules[i];
             if (rule.outcome === destination) {
-                if (i !== lastMatchingRule && rules.slice(i + 1, lastMatchingRule + 1).every(rule => rule.outcome === 'A')) {
-                    ruleRanges.push(mergeRanges([currentRange, allRange]));
-                    break;
-                } else {
-                    ruleRanges.push(mergeRanges([currentRange, getValidRange(rule)]));
+                let rangeForRule = getValidRange(rule);
+                for (let j = i - 1; j >= 0; j--) {
+                    const prevRule = rules[j];
+                    rangeForRule = mergeRanges([rangeForRule, getInvalidRange(prevRule)]);
                 }
-            } else {
-                currentRange = mergeRanges([currentRange, getInvalidRange(rule)]);
-            }        
+                ruleRanges.push(rangeForRule);
+            }
         }
         for (let i = 0; i < ruleRanges.length; i++) {
             ruleRanges[i] = mergeRanges([ruleRanges[i], ...(prevRange ? [prevRange] : [])]);
@@ -167,6 +156,7 @@ export const getValidInputs = (workflows: Record<string, Rule[]>, ruleName: stri
     }
 
     if (ruleName === 'in') {
+        // Filling up ranges where certain fields were not checked by any rule
         for (let i = 0; i < ruleRanges.length; i++) {
             const range = ruleRanges[i];
             if (!range.a) {
@@ -185,12 +175,13 @@ export const getValidInputs = (workflows: Record<string, Rule[]>, ruleName: stri
         return ruleRanges;
     }
 
-    // Asummed one based on input
+    // Thankfully, each step is only invoked from one place.
     const prevRule = Object.entries(workflows).find(([key, value]) => value.some(rule => rule.outcome === ruleName));
     if (!prevRule) {
         throw new Error(`No previous rule found for ${ruleName}`);
     }
 
+    // Recursively go through the prev step, for each range
     return ruleRanges.reduce((acc: PartRange[], range) => {
         return [...acc, ...getValidInputs(workflows, prevRule[0], ruleName, range)];
     }, []);
@@ -201,10 +192,9 @@ export const part2 = (input: string): number => {
 
     let total = 0
     for (const key in workflows) {
+        // Going through all 'steps' that can lead to 'A'
         if (workflows[key].some(rule => rule.outcome === 'A')) {
             const ranges = getValidInputs(workflows, key, 'A');
-            console.log(`Ranges for ${key}`);
-            console.log(ranges);
             for (const range of ranges) {
                 const possibilities = Object.values(range).reduce((acc, [min, max]) => acc * (max - min + 1), 1); 
                 total += possibilities;
